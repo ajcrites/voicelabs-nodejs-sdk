@@ -1,0 +1,16 @@
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+.publish
+.DS_Store
+.idea
+Thumbs.db
+
+npm-debug.log
+node_modules
+bower_components
+test-results
