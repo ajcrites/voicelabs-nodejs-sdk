@@ -1,4 +1,5 @@
-var Enums = require('./enums'),
+var BPromise = require('bluebird'),
+    Enums = require('./enums'),
     Event = require('./event'),
     md5 = require('MD5'),
     _ = require('./utils'),
@@ -34,15 +35,10 @@ var Enums = require('./enums'),
 
         var event = new Event(type, payload);
 
-        try {
-          return event.send(cb);
-        }
-        catch(error){
-          if(_.isFunction(cb)){
-            cb(error, null);
-          }
-          console.error(errors.exception, error);
-        }
+        return BPromise.resolve(event.send()).catch(function(error) {
+            console.error(errors.exception, error);
+            throw error;
+        }).asCallback(cb);
     };
 
 /**
@@ -127,13 +123,9 @@ _.extend(Voice, {
     }
 
     if(error){
-      if(_.isFunction(cb)){
-        cb({
-          error: 'Invalid arguments passed to track(). See standard error for details.'
-        });
-      }
-
-      return;
+      return Promise.reject({
+        error: 'Invalid arguments passed to track(). See standard error for details.'
+      }).asCallback(cb);
     }
 
     var payload = {
@@ -153,13 +145,13 @@ _.extend(Voice, {
       config.agent = 'alexa';
 
       // trigger session event
-      trigger(Enums.eventTypes.INITIALIZE, config, function(){
+      return trigger(Enums.eventTypes.INITIALIZE, config).then(function() {
         // trigger speech event
-        trigger(Enums.eventTypes.SPEECH, payload, cb);
+        return trigger(Enums.eventTypes.SPEECH, payload).asCallback(cb);
       });
     }else{
       // trigger speech event
-      trigger(Enums.eventTypes.SPEECH, payload, cb);
+      return trigger(Enums.eventTypes.SPEECH, payload).asCallback(cb);
     }
   }
 });

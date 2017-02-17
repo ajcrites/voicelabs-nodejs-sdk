@@ -1,4 +1,5 @@
-var Request = require('request'),
+var Request = require('request-promise'),
+    BPromise = require('bluebird'),
     Enums = require('./enums'),
     Constants = require('./constants'),
     _ = require('./utils');
@@ -34,9 +35,9 @@ _.extend(VoiceEvent.prototype, {
 
     var URL = Constants.authURL(Constants.api.baseURL + Constants.api.eventsAPI, this.data.app_token);
 
-    return Request.post(URL, { timeout: 1500, json: this.data }, function(error, response, body){
+    return BPromise.resolve(Request.post(URL, { timeout: 1500, json: this.data })).then(function(error, response, body) {
 
-      var status = response ? response.statusCode : 500
+      var status = response ? response.statusCode : 500,
           output = {
             status: status
           };
@@ -44,15 +45,11 @@ _.extend(VoiceEvent.prototype, {
       if(!error && status >= 200 && status < 300 || status === 304){
         output.response = body;
 
-        if(_.isFunction(cb)){
-          cb(null, output);
-        }
+        return output;
       }else{
-        if(_.isFunction(cb)){
-          cb(error, output);
-        }
+        throw error;
       }
-    });
+    }).asCallback(cb);
   }
 });
 
